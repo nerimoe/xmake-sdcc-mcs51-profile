@@ -1,0 +1,42 @@
+name: XMake - SDCC
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  SDCC_VERSION: "4.5.0"
+
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: setup xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: latest
+    - name: setup sdcc
+      run: |
+        wget "https://cyfuture.dl.sourceforge.net/project/sdcc/sdcc-linux-amd64/$SDCC_VERSION/sdcc-$SDCC_VERSION-amd64-unknown-linux2.5.tar.bz2" -O sdcc.tar.bz2
+        tar -jxvf sdcc.tar.bz2
+        mv sdcc-$SDCC_VERSION sdcc
+        echo "$(pwd)/sdcc/bin" >> $GITHUB_PATH
+    - name: test sdcc
+      run: |
+        sdcc -v
+        sdar --version
+    - name: configure xmake
+      run: xmake f -p mcs51 --toolchain=sdcc -a mcs51 --sdk="/bin"
+    - name: build
+      run: xmake
+    - name: upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: output
+        path: ./build/mcs51/mcs51/release/*
